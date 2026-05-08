@@ -34,6 +34,10 @@ management:
 server:
   shutdown: immediate
 
+coincap:
+  api:
+    base-url: https://rest.coincap.io/v3/
+
 logging:
   level:
     org.appel: INFO
