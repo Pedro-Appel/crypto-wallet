@@ -30,7 +30,7 @@ public class AssetPriceSnapshot {
     @Column(name = "captured_at", nullable = false)
     private Instant capturedAt;
 
-    @Column(name = "price_usd", nullable = false, precision = 2, scale = 8)
+    @Column(name = "price_usd", nullable = false, precision = 19, scale = 8)
     private BigDecimal priceUsd;
 
     protected AssetPriceSnapshot() {
