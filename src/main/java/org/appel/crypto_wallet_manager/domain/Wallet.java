@@ -22,7 +22,7 @@ public class Wallet {
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CoinAsset> assets = new ArrayList<>();
 
-    protected Wallet() {
+    public Wallet() {
     }
 
     public Wallet(List<CoinAsset> assets) {

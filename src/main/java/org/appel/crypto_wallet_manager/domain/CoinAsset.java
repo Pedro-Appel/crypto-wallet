@@ -11,7 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.Instant;
 
 @Entity
 @Table(name = "coin_assets")
@@ -24,14 +24,14 @@ public class CoinAsset {
     @Column(nullable = false, length = 16)
     private String symbol;
 
-    @Column(nullable = false, precision = 2, scale = 8)
+    @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal quantity;
 
-    @Column(name = "purchase_price", nullable = false, precision = 2, scale = 8)
+    @Column(name = "purchase_price", nullable = false, precision = 19, scale = 8)
     private BigDecimal purchasePrice;
 
     @Column(name = "purchase_date", nullable = false)
-    private LocalDate purchaseDate;
+    private Instant purchaseDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id", nullable = false)
@@ -40,7 +40,7 @@ public class CoinAsset {
     protected CoinAsset() {
     }
 
-    public CoinAsset(String symbol, BigDecimal quantity, BigDecimal purchasePrice, LocalDate purchaseDate) {
+    public CoinAsset(String symbol, BigDecimal quantity, BigDecimal purchasePrice, Instant purchaseDate) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.purchasePrice = purchasePrice;
@@ -75,11 +75,11 @@ public class CoinAsset {
         this.purchasePrice = purchasePrice;
     }
 
-    public LocalDate getPurchaseDate() {
+    public Instant getPurchaseDate() {
         return purchaseDate;
     }
 
-    public void setPurchaseDate(LocalDate purchaseDate) {
+    public void setPurchaseDate(Instant purchaseDate) {
         this.purchaseDate = purchaseDate;
     }
 

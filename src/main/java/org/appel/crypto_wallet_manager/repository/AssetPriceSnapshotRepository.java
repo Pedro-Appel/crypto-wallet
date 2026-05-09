@@ -5,10 +5,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface AssetPriceSnapshotRepository extends JpaRepository<AssetPriceSnapshot, Long> {
 
-    List<AssetPriceSnapshot> findBySymbolIgnoreCaseOrderByCapturedAtDesc(String symbol);
+    Optional<AssetPriceSnapshot> findFirstBySymbolIgnoreCaseOrderByCapturedAtDesc(String symbol);
+
+    Optional<AssetPriceSnapshot> findFirstBySymbolIgnoreCaseAndCapturedAtLessThanEqualOrderByCapturedAtDesc(
+            String symbol,
+            Instant capturedAt
+    );
 
     List<AssetPriceSnapshot> findByCapturedAtBetween(Instant from, Instant to);
 }

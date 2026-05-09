@@ -5,13 +5,19 @@ spring:
     username: crypto
     password: crypto
     driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:data.sql
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
+    show-sql: true
 
 management:
   endpoint.health.show-details: always
