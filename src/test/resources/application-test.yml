@@ -1,0 +1,11 @@
+spring.application.name: crypto-wallet-manager
+
+coincap:
+  api:
+    asset-snapshot.fixed-rate: 30 # every 30 seconds
+    base-url: https://mock-coincap-api.com
+    apiKey: "1234"
+
+logging:
+  level:
+    org.appel: DEBUG

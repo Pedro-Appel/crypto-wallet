@@ -18,6 +18,14 @@ spring:
         jdbc:
           time_zone: UTC
     show-sql: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            logger-level: basic
+            connect-timeout: 5000
+            read-timeout: 5000
 
 management:
   endpoint.health.show-details: always
@@ -42,9 +50,11 @@ server:
 
 coincap:
   api:
-    base-url: https://rest.coincap.io/v3/
+    asset-snapshot.fixed-rate: 30 # every 30 seconds
+    base-url: https://rest.coincap.io
+    apiKey: ${COIN_CAP_API_KEY}
 
 logging:
   level:
-    org.appel: INFO
     org.springframework.boot.actuator.autoconfigure.opentelemetry: DEBUG
+    org.appel.crypto_wallet_manager.client: TRACE

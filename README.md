@@ -90,6 +90,10 @@ GET /health/prices
 - PostgreSQL
 - Docker (optional, for running PostgreSQL + LGTM Stack)
 
+## Configure API KEY:
+
+COIN_CAP_API_KEY=your_api_key_here
+
 ## Run DockerCompose
 ```bash
 docker compose up -d

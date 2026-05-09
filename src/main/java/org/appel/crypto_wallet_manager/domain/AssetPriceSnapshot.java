@@ -1,12 +1,6 @@
 package org.appel.crypto_wallet_manager.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -27,6 +21,9 @@ public class AssetPriceSnapshot {
     @Column(nullable = false, length = 16)
     private String symbol;
 
+    @Column(nullable = false, length = 16)
+    private String name;
+
     @Column(name = "captured_at", nullable = false)
     private Instant capturedAt;
 
@@ -36,8 +33,9 @@ public class AssetPriceSnapshot {
     protected AssetPriceSnapshot() {
     }
 
-    public AssetPriceSnapshot(String symbol, Instant capturedAt, BigDecimal priceUsd) {
+    public AssetPriceSnapshot(String symbol, String name, Instant capturedAt, BigDecimal priceUsd) {
         this.symbol = symbol;
+        this.name = name;
         this.capturedAt = capturedAt;
         this.priceUsd = priceUsd;
     }
@@ -52,6 +50,14 @@ public class AssetPriceSnapshot {
 
     public void setSymbol(String symbol) {
         this.symbol = symbol;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public Instant getCapturedAt() {

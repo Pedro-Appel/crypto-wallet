@@ -1,14 +1,6 @@
 package org.appel.crypto_wallet_manager.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -23,6 +15,9 @@ public class CoinAsset {
 
     @Column(nullable = false, length = 16)
     private String symbol;
+
+    @Column(nullable = false, length = 32)
+    private String name;
 
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal quantity;
@@ -40,8 +35,9 @@ public class CoinAsset {
     protected CoinAsset() {
     }
 
-    public CoinAsset(String symbol, BigDecimal quantity, BigDecimal purchasePrice, Instant purchaseDate) {
+    public CoinAsset(String symbol, String name, BigDecimal quantity, BigDecimal purchasePrice, Instant purchaseDate) {
         this.symbol = symbol;
+        this.name = name;
         this.quantity = quantity;
         this.purchasePrice = purchasePrice;
         this.purchaseDate = purchaseDate;
@@ -49,6 +45,14 @@ public class CoinAsset {
 
     public Long getId() {
         return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getSymbol() {
