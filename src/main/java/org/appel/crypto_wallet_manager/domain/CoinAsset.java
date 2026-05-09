@@ -35,9 +35,13 @@ public class CoinAsset {
     protected CoinAsset() {
     }
 
-    public CoinAsset(String symbol, String name, BigDecimal quantity, BigDecimal purchasePrice, Instant purchaseDate) {
-        this.symbol = symbol;
-        this.name = name;
+    public CoinAsset(String symbol,
+                     String name,
+                     BigDecimal quantity,
+                     BigDecimal purchasePrice,
+                     Instant purchaseDate) {
+        this.symbol = symbol.toLowerCase();
+        this.name = name.toLowerCase();
         this.quantity = quantity;
         this.purchasePrice = purchasePrice;
         this.purchaseDate = purchaseDate;

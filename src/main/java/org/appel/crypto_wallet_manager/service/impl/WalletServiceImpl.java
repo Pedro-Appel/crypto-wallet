@@ -14,7 +14,6 @@ import org.appel.crypto_wallet_manager.repository.AssetPriceSnapshotRepository;
 import org.appel.crypto_wallet_manager.repository.WalletRepository;
 import org.appel.crypto_wallet_manager.service.WalletService;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -34,7 +34,6 @@ public class WalletServiceImpl implements WalletService {
     private static final int PERCENT_SCALE = 2;
     public static final String HISTORY_CACHE_KEY = "#p1-p2";
 
-    private final String apiKey;
     private final CoinCapClient coinCapClient;
     private final WalletRepository walletRepository;
     private final AssetPriceSnapshotRepository assetPriceSnapshotRepository;
@@ -43,12 +42,10 @@ public class WalletServiceImpl implements WalletService {
     public WalletServiceImpl(
             WalletRepository walletRepository,
             AssetPriceSnapshotRepository assetPriceSnapshotRepository,
-            CoinCapClient coinCapClient,
-            @Value("${coincap.api.apiKey}") String apiKey) {
+            CoinCapClient coinCapClient) {
         this.walletRepository = walletRepository;
         this.assetPriceSnapshotRepository = assetPriceSnapshotRepository;
         this.coinCapClient = coinCapClient;
-        this.apiKey = apiKey;
     }
 
     private static BigDecimal scaleMoney(BigDecimal value) {
@@ -74,9 +71,12 @@ public class WalletServiceImpl implements WalletService {
     @Cacheable(cacheNames = "walletHistory", key = HISTORY_CACHE_KEY)
     public WalletHistoryResponse getWalletHistory(Instant fromDate, Long id) {
         Wallet wallet = getSingleWallet(id);
-
-        List<BigDecimal> values = wallet.getAssets().stream()
-                .map(asset -> historicalPriceFor(asset.getSymbol(), fromDate)
+        log.fine("Calculating wallet history for wallet " + id + " at " + fromDate);
+        List<BigDecimal> values = wallet.getAssets()
+                .stream()
+                .filter(asset -> asset.getPurchaseDate().isBefore(fromDate) || asset.getPurchaseDate().equals(fromDate))
+                .peek(asset -> log.info("Calculating historical value for asset " + asset.getSymbol() + " at " + fromDate))
+                .map(asset -> historicalPriceFor(asset.getName(), fromDate)
                         .map(price -> price.multiply(asset.getQuantity()))
                         .orElse(null))
                 .filter(Objects::nonNull)
@@ -89,6 +89,28 @@ public class WalletServiceImpl implements WalletService {
         BigDecimal totalValue = values.stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return new WalletHistoryResponse(fromDate, scaleMoney(totalValue));
+    }
+
+    private Optional<BigDecimal> historicalPriceFor(String assetName, Instant fromDate) {
+        try {
+            return assetPriceSnapshotRepository
+                    .findFirstByNameIgnoreCaseAndCapturedAtLessThanEqualOrderByCapturedAtDesc(assetName, fromDate)
+                    .map(AssetPriceSnapshot::getPriceUsd)
+                    .or(() -> {
+                        log.warning("No historical price found for " + assetName + " at " + fromDate + ", fetching from API");
+                        Instant startDate = fromDate.minus(1, ChronoUnit.DAYS);
+                        return coinCapClient.fetchHistoricalPrice(assetName,
+                                        TimeConverter.convertISOToEpoch(startDate),
+                                        TimeConverter.convertISOToEpoch(fromDate))
+                                .data()
+                                .stream()
+                                .map(AssetData::priceUsd)
+                                .map(BigDecimal::new)
+                                .findFirst();
+                    });
+        } catch (Exception e) {
+            throw new ServiceNotAvailable("Service is not available, not possible to finalize call");
+        }
     }
 
     @Cacheable(cacheNames = "walletPerformance", key = "#id")
@@ -146,7 +168,7 @@ public class WalletServiceImpl implements WalletService {
 
     private CoinAsset toCoinAsset(CoinAssetRequest request) {
         try {
-            List<AssetData> data = coinCapClient.searchAssetName(request.symbol(), 1, apiKey)
+            List<AssetData> data = coinCapClient.searchAssetName(request.symbol())
                     .data();
             if (data.isEmpty()) {
                 throw new NotFoundException("Asset not found: " + request.symbol());
@@ -177,6 +199,7 @@ public class WalletServiceImpl implements WalletService {
                 asset.getPurchasePrice(),
                 currentPriceUsd,
                 currentValueUsd,
+                asset.getPurchaseDate(),
                 currentPriceUsd == null ? "UNAVAILABLE" : "AVAILABLE"
         );
     }
@@ -251,16 +274,6 @@ public class WalletServiceImpl implements WalletService {
     private Optional<AssetPriceSnapshot> currentPriceFor(String symbol) {
         try {
             return assetPriceSnapshotRepository.findFirstBySymbolIgnoreCaseOrderByCapturedAtDesc(symbol);
-        } catch (Exception e) {
-            throw new ServiceNotAvailable("Service is not available, not possible to finalize call");
-        }
-    }
-
-    private Optional<BigDecimal> historicalPriceFor(String symbol, Instant fromDate) {
-        try {
-            return assetPriceSnapshotRepository
-                    .findFirstBySymbolIgnoreCaseAndCapturedAtLessThanEqualOrderByCapturedAtDesc(symbol, fromDate)
-                    .map(AssetPriceSnapshot::getPriceUsd);
         } catch (Exception e) {
             throw new ServiceNotAvailable("Service is not available, not possible to finalize call");
         }

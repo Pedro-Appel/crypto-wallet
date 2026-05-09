@@ -4,7 +4,6 @@ import org.appel.crypto_wallet_manager.client.CoinCapClient;
 import org.appel.crypto_wallet_manager.dto.AssetPriceResponse;
 import org.appel.crypto_wallet_manager.service.CoinAssetService;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -17,21 +16,17 @@ public class AssetPriceScheduler {
 
     private final Logger logger = Logger.getLogger(AssetPriceScheduler.class.getName());
 
-    private final String apiKey;
     private final CoinCapClient client;
     private final CoinAssetService coinAssetService;
     private final ThreadPoolTaskExecutor executorService;
 
     public AssetPriceScheduler(CoinCapClient client,
-                               @Value("${coincap.api.apiKey}") String apiKey,
                                CoinAssetService coinAssetService,
                                @Qualifier("threadPoolTaskExecutor") ThreadPoolTaskExecutor executorService) {
         this.client = client;
-        this.apiKey = apiKey;
         this.coinAssetService = coinAssetService;
         this.executorService = executorService;
     }
-
 
     /// This is what I would do to minimize API Calls
     ///    String allDistinctNames =
@@ -59,7 +54,7 @@ public class AssetPriceScheduler {
 
     private void updatePrices(String asset) {
         logger.fine("Updating asset price for asset: " + asset);
-        AssetPriceResponse listOfAssets = client.fetchAssetPrices(asset, apiKey);
+        AssetPriceResponse listOfAssets = client.fetchAssetPrices(asset);
         coinAssetService.createAssetsSnapshot(listOfAssets);
         logger.fine("Scheduled task to update asset prices...");
     }

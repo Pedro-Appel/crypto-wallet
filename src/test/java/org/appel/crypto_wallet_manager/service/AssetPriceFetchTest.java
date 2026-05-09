@@ -40,7 +40,7 @@ public class AssetPriceFetchTest {
         executorService.setAwaitTerminationSeconds(3);
         executorService.setWaitForTasksToCompleteOnShutdown(true);
         executorService.initialize();
-        scheduler = new AssetPriceScheduler(coinCapClient, "fake-api-key", coinAssetService, executorService);
+        scheduler = new AssetPriceScheduler(coinCapClient, coinAssetService, executorService);
     }
 
     @AfterEach
@@ -54,7 +54,7 @@ public class AssetPriceFetchTest {
         BDDMockito.given(coinAssetRepository.fetchDifferentNames())
                 .willReturn(List.of("bitcoin", "ethereum", "cardano"));
         //And the external API response OK
-        BDDMockito.given(coinCapClient.fetchAssetPrices(BDDMockito.anyString(), BDDMockito.anyString()))
+        BDDMockito.given(coinCapClient.fetchAssetPrices(BDDMockito.anyString()))
                 .willReturn(TestUtils.getCoinCapResponseAsObject());
         //When the schedule hit
 
@@ -62,7 +62,7 @@ public class AssetPriceFetchTest {
         // Wait for all tasks to complete
         executorService.shutdown();
         //Then should fetch the price for each distinct symbol in third party API
-        BDDMockito.verify(coinCapClient, Mockito.times(3)).fetchAssetPrices(BDDMockito.anyString(), BDDMockito.anyString());
+        BDDMockito.verify(coinCapClient, Mockito.times(3)).fetchAssetPrices(BDDMockito.anyString());
         //And  should save the prices for each distinct symbol in database
         BDDMockito.verify(snapshotRepository, Mockito.times(3)).saveAll(BDDMockito.anyList());
     }
