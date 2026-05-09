@@ -7,6 +7,7 @@ import org.appel.crypto_wallet_manager.dto.AssetPriceResponse;
 import org.appel.crypto_wallet_manager.repository.AssetPriceSnapshotRepository;
 import org.appel.crypto_wallet_manager.repository.CoinAssetRepository;
 import org.appel.crypto_wallet_manager.service.CoinAssetService;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public class CoinAssetServiceImpl implements CoinAssetService {
 
     @Override
     @Transactional
+    @Cacheable("assetNames")
     public List<String> getAssetNames() {
         return coinAssetRepository.fetchDifferentNames();
     }

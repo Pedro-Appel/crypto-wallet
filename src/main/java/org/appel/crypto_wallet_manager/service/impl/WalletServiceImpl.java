@@ -14,6 +14,7 @@ import org.appel.crypto_wallet_manager.repository.WalletRepository;
 import org.appel.crypto_wallet_manager.service.WalletService;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,6 +34,8 @@ public class WalletServiceImpl implements WalletService {
 
     private static final int MONEY_SCALE = 8;
     private static final int PERCENT_SCALE = 2;
+    public static final String HISTORY_CACHE_KEY = "#p1-p2";
+
     private final String apiKey;
     private final CoinCapClient coinCapClient;
     private final WalletRepository walletRepository;
@@ -54,6 +57,7 @@ public class WalletServiceImpl implements WalletService {
         return value.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
     }
 
+    @Cacheable(cacheNames = "walletSummary", key = "#id")
     public WalletSummaryResponse getWalletSummary(Long id) {
         Wallet wallet = getSingleWallet(id);
         BigDecimal totalValue = wallet.getAssets().stream()
@@ -69,6 +73,7 @@ public class WalletServiceImpl implements WalletService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = "walletHistory", key = HISTORY_CACHE_KEY)
     public WalletHistoryResponse getWalletHistory(Instant fromDate, Long id) {
         Wallet wallet = getSingleWallet(id);
 
@@ -88,6 +93,7 @@ public class WalletServiceImpl implements WalletService {
         return new WalletHistoryResponse(fromDate, scaleMoney(totalValue));
     }
 
+    @Cacheable(cacheNames = "walletPerformance", key = "#id")
     public WalletPerformanceResponse getWalletPerformance(Long id) {
         Wallet wallet = getSingleWallet(id);
         List<WalletPerformanceAssetResponse> assets = wallet.getAssets().stream()
