@@ -12,7 +12,6 @@ The system must:
 ## Entities
 * Wallet
 * CoinAsset
-* User
 
 ### Wallet
 - id
@@ -20,6 +19,7 @@ The system must:
 
 ### CoinAsset
 - symbol (e.g., BTC, ETH)
+- name (e.g., Bitcoin, Ethereum)
 - quantity (amount owned)
 - purchase_price (USD price at acquisition)
 - purchase_date
@@ -28,23 +28,32 @@ The system must:
 * Periodic fetch market prices for each coin and store value by date so it can be used later to see the state of the coin in a given time period
   * https://rest.coincap.io/v3/assets
 * Add assets to wallet (provide symbol, quantity, purchase price, and purchase date)
-* Expose wallet state (List wallet assets and wallet value)
+* Expose wallet assets
+* Expose wallet summary
 * Expose historical value (Value on a given date)
 * Wallet performance - Based on the historical value if each coin purchase calculate the growth of each asset providing:
-    * a list with best performing asset,
+    * best performing asset,
     * worst performing asset,
     * all asset’s performances
 
 ## Technical definition
-
 1. SpringBoot 4 + Java 25
 2. PostgreSQL
 3. Third party : CoinCap API (https://rest.coincap.io/v3/)
+4. OTEL for metrics, tracing and logging
+5. Docker for local development and testing
+6. Gradle as build tool
+7. JUnit + Mockito for testing
+8. Swagger / OpenAPI for API documentation (External API Health Exposure with Actuator)
+9. FeignClient for external API integration
+10. Spring Scheduler for periodic tasks
+11. ThreadPoolTaskExecutor for async execution of scheduled tasks (Max 3 threads)
+12. Resilience4j for handling external API failures gracefully
 
 ### Specific requirements
 #### Third Party
 1. Async request (Scheduled every 30s)
-2. use a custom ThreadExecutor with a max of 3 threads
+2. Use a custom ThreadExecutor with a max of 3 threads
 3. Unavailability of the external API **must** not make the our API unavailable
 4. Price must be in USD
 
@@ -53,13 +62,13 @@ The system must:
 - No requirement on performance or reactivity was mentioned so will assume the easier and make it synchronous
 
 ## Main APIs
-POST /wallet
-GET /wallet/{id}
-GET /wallet/{id}/assets
-POST /wallet/{id}/assets
-GET /wallet/{id}/history?fromDate={iso-8601-instant}
-GET /wallet/{id}/performance
-GET /actuator/health
+POST /wallet - Create a new wallet
+GET /wallet/{id} - Get wallet current value
+GET /wallet/{id}/assets - List all assets purchases in the wallet
+POST /wallet/{id}/assets - Add a new asset to the wallet
+GET /wallet/{id}/history?fromDate={iso-8601-instant} - Get historical value of the wallet from a given date
+GET /wallet/{id}/performance - Get performance of each asset in the wallet
+GET /actuator/health - Health check endpoint to monitor the status of the application and its dependencies (including external API)
 
 ## Architecture decisions
 - Wallets are managed by id
@@ -79,12 +88,12 @@ GET /actuator/health
 - Failure handling
 
 ## After MVP
-- Docker or even a Kubernetes Setup
-- Rate limiting or retry logic for API calls
-- Caching of latest prices
-- Pagination for price history
-- Metrics or logging
-- OpenAPI / Swagger documentation
+- Docker or even a Kubernetes Setup (Check)
+- Rate limiting or retry logic for API calls (Check)
+- Caching of latest prices (Check - But not for external API calls, only for internal queries) 
+- Pagination for price history (TBD)
+- Metrics or logging (Check)
+- OpenAPI / Swagger documentation (Check)
 
 ## Running the project
 ### Requirements
@@ -98,5 +107,15 @@ COIN_CAP_API_KEY=your_api_key_here
 
 ## Run DockerCompose
 ```bash
-docker compose up -d
+  COIN_CAP_API_KEY=your_api_key_here \
+  COIN_CAP_BASE_URL=https://rest.coincap.io \
+  COIN_CAP_ASSET_SNAPSHOT_FIXED_RATE=30 \
+  POSTGRES_DB=crypto_wallet \
+  POSTGRES_USER=crypto \
+  POSTGRES_PASSWORD=crypto \
+  POSTGRES_PORT=5432 \
+  APP_PORT=8080 \
+  SPRING_PROFILES_ACTIVE=local \
+  JAVA_OPTS="-Xmx256m -Xms128m" \
+  docker compose up -d
 ```

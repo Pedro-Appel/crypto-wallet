@@ -1,15 +1,45 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crypto-wallet-manager
+    depends_on:
+      postgres:
+        condition: service_healthy
+      grafana-lgtm:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-crypto_wallet}
+      DATABASE_USERNAME: ${POSTGRES_USER:-crypto}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-crypto}
+      COIN_CAP_API_KEY: ${COIN_CAP_API_KEY:-change-me}
+      COIN_CAP_BASE_URL: ${COIN_CAP_BASE_URL:-https://rest.coincap.io}
+      COIN_CAP_ASSET_SNAPSHOT_FIXED_RATE: ${COIN_CAP_ASSET_SNAPSHOT_FIXED_RATE:-30}
+      METRICS_OTLP_ENDPOINT: http://grafana-lgtm:4318/v1/metrics
+      TRACES_OTLP_ENDPOINT: http://grafana-lgtm:4318/v1/traces
+      LOGGING_OTLP_ENDPOINT: http://grafana-lgtm:4318/v1/logs
+      JAVA_OPTS: ${JAVA_OPTS:-}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
   postgres:
-    image: postgres:17
+    image: postgres:17-alpine
     container_name: crypto-wallet-postgres
     environment:
-      POSTGRES_DB: crypto_wallet
-      POSTGRES_USER: crypto
-      POSTGRES_PASSWORD: crypto
+      POSTGRES_DB: ${POSTGRES_DB:-crypto_wallet}
+      POSTGRES_USER: ${POSTGRES_USER:-crypto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crypto}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   grafana-lgtm:
     image: grafana/otel-lgtm:latest
@@ -18,6 +48,8 @@ services:
       - '3000:3000'
       - '4317:4317'
       - '4318:4318'
+    volumes:
+      - grafana_data:/data
 
 volumes:
   postgres_data:
