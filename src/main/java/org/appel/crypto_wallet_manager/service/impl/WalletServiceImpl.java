@@ -9,6 +9,7 @@ import org.appel.crypto_wallet_manager.dto.request.AddCoinAssetRequest;
 import org.appel.crypto_wallet_manager.dto.request.CoinAssetRequest;
 import org.appel.crypto_wallet_manager.dto.request.WalletCreateRequest;
 import org.appel.crypto_wallet_manager.exception.NotFoundException;
+import org.appel.crypto_wallet_manager.exception.ServiceNotAvailable;
 import org.appel.crypto_wallet_manager.repository.AssetPriceSnapshotRepository;
 import org.appel.crypto_wallet_manager.repository.WalletRepository;
 import org.appel.crypto_wallet_manager.service.WalletService;
@@ -17,7 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,8 +25,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 @Transactional
@@ -40,7 +38,7 @@ public class WalletServiceImpl implements WalletService {
     private final CoinCapClient coinCapClient;
     private final WalletRepository walletRepository;
     private final AssetPriceSnapshotRepository assetPriceSnapshotRepository;
-    Logger log = Logger.getLogger(WalletServiceImpl.class.getName());
+    private final Logger log = Logger.getLogger(WalletServiceImpl.class.getName());
 
     public WalletServiceImpl(
             WalletRepository walletRepository,
@@ -129,7 +127,7 @@ public class WalletServiceImpl implements WalletService {
 
     public void addAssetToWallet(Long walletId, AddCoinAssetRequest request) {
         Wallet wallet = walletRepository.findById(walletId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Wallet not found"));
+                .orElseThrow(() -> new NotFoundException("Wallet not found"));
         wallet.addAsset(toCoinAsset(new CoinAssetRequest(
                 request.symbol(),
                 request.quantity(),
@@ -147,19 +145,23 @@ public class WalletServiceImpl implements WalletService {
     }
 
     private CoinAsset toCoinAsset(CoinAssetRequest request) {
-        List<AssetData> data = coinCapClient.searchAssetName(request.symbol(), 1, apiKey)
-                .data();
-        if(data.isEmpty()) {
-            throw new NotFoundException("Asset not found: " + request.symbol());
-        }
+        try {
+            List<AssetData> data = coinCapClient.searchAssetName(request.symbol(), 1, apiKey)
+                    .data();
+            if (data.isEmpty()) {
+                throw new NotFoundException("Asset not found: " + request.symbol());
+            }
 
-        return new CoinAsset(
-                request.symbol(),
-                data.getFirst().name(),
-                request.quantity(),
-                request.purchasePrice(),
-                request.purchaseDate()
-        );
+            return new CoinAsset(
+                    request.symbol(),
+                    data.getFirst().name(),
+                    request.quantity(),
+                    request.purchasePrice(),
+                    request.purchaseDate()
+            );
+        } catch (Exception e) {
+            throw new ServiceNotAvailable("Service is not available, not possible to finalize call");
+        }
     }
 
     private WalletAssetResponse toWalletAssetResponse(CoinAsset asset) {
@@ -247,12 +249,20 @@ public class WalletServiceImpl implements WalletService {
     }
 
     private Optional<AssetPriceSnapshot> currentPriceFor(String symbol) {
-        return assetPriceSnapshotRepository.findFirstBySymbolIgnoreCaseOrderByCapturedAtDesc(symbol);
+        try {
+            return assetPriceSnapshotRepository.findFirstBySymbolIgnoreCaseOrderByCapturedAtDesc(symbol);
+        } catch (Exception e) {
+            throw new ServiceNotAvailable("Service is not available, not possible to finalize call");
+        }
     }
 
     private Optional<BigDecimal> historicalPriceFor(String symbol, Instant fromDate) {
-        return assetPriceSnapshotRepository
-                .findFirstBySymbolIgnoreCaseAndCapturedAtLessThanEqualOrderByCapturedAtDesc(symbol, fromDate)
-                .map(AssetPriceSnapshot::getPriceUsd);
+        try {
+            return assetPriceSnapshotRepository
+                    .findFirstBySymbolIgnoreCaseAndCapturedAtLessThanEqualOrderByCapturedAtDesc(symbol, fromDate)
+                    .map(AssetPriceSnapshot::getPriceUsd);
+        } catch (Exception e) {
+            throw new ServiceNotAvailable("Service is not available, not possible to finalize call");
+        }
     }
 }
