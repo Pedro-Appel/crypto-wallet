@@ -1,0 +1,62 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    defer-datasource-initialization: false
+    show-sql: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            logger-level: basic
+
+management:
+  endpoint.health.show-details: always
+  tracing:
+    sampling:
+      probability: 0.5
+  otlp:
+    metrics:
+      export:
+        url: ${METRICS_OTLP_ENDPOINT:http://localhost:4318/v1/metrics}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${TRACES_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+    logging:
+      export:
+        otlp:
+          endpoint: ${LOGGING_OTLP_ENDPOINT:http://localhost:4318/v1/logs}
+
+coincap:
+  api:
+    asset-snapshot.fixed-rate: ${COIN_CAP_ASSET_SNAPSHOT_FIXED_RATE:30} # every 30 seconds
+    base-url: ${COIN_CAP_BASE_URL:https://rest.coincap.io}
+    apiKey: ${COIN_CAP_API_KEY}
+
+logging:
+  level:
+    org.appel: INFO
+    io.github.resilience4j: INFO
+
+resilience4j:
+  retry:
+    backends:
+      coincap:
+        max-attempts: ${COINCAP_RETRY_MAX_ATTEMPTS:3}
+        wait-duration: ${COINCAP_RETRY_WAIT_DURAION:1000ms}
+        enable-exponential-backoff: ${COINCAP_RETRY_EXPO_BACKOFF:true}
+        exponential-backoff-multiplier: ${COINCAP_RETRY_EXPO_BACKOFF_MULTIPLIER:2}
+  circuitbreaker:
+    backends:
+      coincap:
+        sliding-window-size: ${COINCAP_CIRCUIT_BREAKER_SLIDING_WINDOW_SIZE:10}
+        failure-rate-threshold: ${COINCAP_CIRCUIT_BREAKER_FAILURE_RATE_THRESHOLD:50}
+        wait-duration-in-open-state: ${COINCAP_CIRCUIT_BREAKER_WAIT_DURATION_IN_OPEN_STATE:5000ms}
+  ratelimiter:
+    instances:
+      wallet:
+        limit-for-period: ${WALLET_RATE_LIMITER_LIMIT_FOR_PERIOD:10}
+        limit-refresh-period: ${WALLET_RATE_LIMITER_LIMIT_REFRESH_PERIOD:1s}

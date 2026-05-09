@@ -1,82 +1,21 @@
 spring:
   application.name: crypto-wallet-manager
   datasource:
-    url: jdbc:postgresql://localhost:5432/crypto_wallet
-    username: crypto
-    password: crypto
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
-  sql:
-    init:
-      mode: always
-      data-locations: classpath:data.sql
   jpa:
-    hibernate:
-      ddl-auto: update
-    defer-datasource-initialization: true
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
-    show-sql: true
   cloud:
     openfeign:
       client:
         config:
           default:
-            logger-level: basic
             connect-timeout: 5000
             read-timeout: 5000
-
-management:
-  endpoint.health.show-details: always
-  tracing:
-    sampling:
-      probability: 1.0  # 100% sampling for development
-  otlp:
-    metrics:
-      export:
-        url: http://localhost:4318/v1/metrics
-  opentelemetry:
-    tracing:
-      export:
-        otlp:
-          endpoint: http://localhost:4318/v1/traces
-    logging:
-      export:
-        otlp:
-          endpoint: http://localhost:4318/v1/logs
-server:
-  shutdown: immediate
-
-coincap:
-  api:
-    asset-snapshot.fixed-rate: 30 # every 30 seconds
-    base-url: https://rest.coincap.io
-    apiKey: ${COIN_CAP_API_KEY}
-
-logging:
-  level:
-    org.appel: TRACE
-    io.github.resilience4j: TRACE
-
-
-resilience4j:
-  retry:
-    backends:
-        coincap:
-            max-attempts: 3
-            wait-duration: 1000ms
-            enable-exponential-backoff: true
-            exponential-backoff-multiplier: 2
-#  timelimiter not neeed for now, as we have set read and connect timeouts in feign client configuration
-  circuitbreaker:
-    backends:
-        coincap:
-            sliding-window-size: 10
-            failure-rate-threshold: 50
-            wait-duration-in-open-state: 5000ms
-  ratelimiter:
-    instances:
-        wallet:
-            limit-for-period: 10
-            limit-refresh-period: 1s
+  profiles:
+    active: local

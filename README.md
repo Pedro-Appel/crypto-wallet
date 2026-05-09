@@ -49,20 +49,22 @@ The system must:
 4. Price must be in USD
 
 ## Project assumptions
-- No user management only a single wallet will be implemented for the MVP so no user entity or authentication will be required
+- No user management will be implemented for the MVP, so no user entity or authentication will be required
 - No requirement on performance or reactivity was mentioned so will assume the easier and make it synchronous
 
 ## Main APIs
-GET /wallet
-GET /wallet/assets
-GET /wallet/history
-GET /wallet/performance
-GET /health/prices
+POST /wallet
+GET /wallet/{id}
+GET /wallet/{id}/assets
+POST /wallet/{id}/assets
+GET /wallet/{id}/history?fromDate={iso-8601-instant}
+GET /wallet/{id}/performance
+GET /actuator/health
 
 ## Architecture decisions
-- Single wallet MVP
+- Wallets are managed by id
 - No authentication
-- Daily historical snapshots
+- Market price snapshots are scheduled every 30 seconds
 - CoinCap integration with async scheduler
 - External API failures do not affect local APIs
 

@@ -1,4 +1,4 @@
-package org.appel.crypto_wallet_manager.controller;
+package org.appel.crypto_wallet_manager.web;
 
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.appel.crypto_wallet_manager.dto.*;

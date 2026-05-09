@@ -1,4 +1,4 @@
-package org.appel.crypto_wallet_manager.controller;
+package org.appel.crypto_wallet_manager.web;
 
 import org.appel.crypto_wallet_manager.exception.NotFoundException;
 import org.appel.crypto_wallet_manager.exception.ServiceNotAvailable;
