@@ -2,7 +2,10 @@ package org.appel.crypto_wallet_manager.service;
 
 import org.appel.crypto_wallet_manager.service.impl.TimeConverter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
+@Execution(ExecutionMode.CONCURRENT)
 public class TimeConversionTest {
     @Test
     void convertToIso8601(){

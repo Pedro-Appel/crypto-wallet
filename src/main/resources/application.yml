@@ -56,5 +56,27 @@ coincap:
 
 logging:
   level:
-    org.springframework.boot.actuator.autoconfigure.opentelemetry: DEBUG
-    org.appel.crypto_wallet_manager.client: TRACE
+    org.appel: TRACE
+    io.github.resilience4j: TRACE
+
+
+resilience4j:
+  retry:
+    backends:
+        coincap:
+            max-attempts: 3
+            wait-duration: 1000ms
+            enable-exponential-backoff: true
+            exponential-backoff-multiplier: 2
+#  timelimiter not neeed for now, as we have set read and connect timeouts in feign client configuration
+  circuitbreaker:
+    backends:
+        coincap:
+            sliding-window-size: 10
+            failure-rate-threshold: 50
+            wait-duration-in-open-state: 5000ms
+  ratelimiter:
+    instances:
+        wallet:
+            limit-for-period: 10
+            limit-refresh-period: 1s

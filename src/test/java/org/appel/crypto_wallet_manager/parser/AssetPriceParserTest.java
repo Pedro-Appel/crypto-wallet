@@ -5,11 +5,13 @@ import org.appel.crypto_wallet_manager.dto.AssetData;
 import org.appel.crypto_wallet_manager.dto.AssetPriceResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.List;
 
+@Execution(ExecutionMode.CONCURRENT)
 public class AssetPriceParserTest {
-
 
     @Test
     void apiResponseParser(){

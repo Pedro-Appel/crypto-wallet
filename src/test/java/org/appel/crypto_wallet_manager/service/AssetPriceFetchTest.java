@@ -9,12 +9,17 @@ import org.appel.crypto_wallet_manager.service.impl.CoinAssetServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.List;
 
+@Execution(ExecutionMode.CONCURRENT)
 public class AssetPriceFetchTest {
 
     AutoCloseable mockito;
@@ -25,12 +30,17 @@ public class AssetPriceFetchTest {
     private CoinAssetRepository coinAssetRepository;
     @Mock
     private AssetPriceSnapshotRepository snapshotRepository;
+    private final ThreadPoolTaskExecutor executorService = new ThreadPoolTaskExecutor();
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         mockito = MockitoAnnotations.openMocks(this);
         CoinAssetService coinAssetService = new CoinAssetServiceImpl(coinAssetRepository, snapshotRepository);
-        scheduler = new AssetPriceScheduler(coinCapClient, "fake-api-key", coinAssetService);
+        executorService.setCorePoolSize(3);
+        executorService.setAwaitTerminationSeconds(3);
+        executorService.setWaitForTasksToCompleteOnShutdown(true);
+        executorService.initialize();
+        scheduler = new AssetPriceScheduler(coinCapClient, "fake-api-key", coinAssetService, executorService);
     }
 
     @AfterEach
@@ -48,10 +58,12 @@ public class AssetPriceFetchTest {
                 .willReturn(TestUtils.getCoinCapResponseAsObject());
         //When the schedule hit
 
-        scheduler.onApplicationStarted();
+        scheduler.asyncPriceExecutor();
+        // Wait for all tasks to complete
+        executorService.shutdown();
         //Then should fetch the price for each distinct symbol in third party API
-        BDDMockito.verify(coinCapClient).fetchAssetPrices(BDDMockito.anyString(), BDDMockito.anyString());
+        BDDMockito.verify(coinCapClient, Mockito.times(3)).fetchAssetPrices(BDDMockito.anyString(), BDDMockito.anyString());
         //And  should save the prices for each distinct symbol in database
-        BDDMockito.verify(snapshotRepository).saveAll(BDDMockito.anyList());
+        BDDMockito.verify(snapshotRepository, Mockito.times(3)).saveAll(BDDMockito.anyList());
     }
 }
